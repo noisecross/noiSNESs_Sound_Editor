@@ -33,6 +33,7 @@ namespace noiSNESs_Sound_Editor
             btnFindBrrs.Enabled = false;
             btnPlayBrr.Enabled = false;
             btnExportSample.Enabled = false;
+            btnExportAllSamples.Enabled = false;
             btnSaveFile.Enabled = false;
             cmbSampleToEdit.DataSource = null;
             labFileName.Text = "-";
@@ -111,6 +112,7 @@ namespace noiSNESs_Sound_Editor
 
                 btnPlayBrr.Enabled = true;
                 btnExportSample.Enabled = true;
+                btnExportAllSamples.Enabled = true;
             }
             catch
             {
@@ -133,6 +135,9 @@ namespace noiSNESs_Sound_Editor
                 uint sampleRate = Convert.ToUInt32(nudSampleRate.Value);
 
                 Brr.playBrr(brrToPlay, sampleRate, chbGaussian.Checked);
+
+                if (chbAutoNext.Checked)
+                    cmbSampleToEdit.SelectedIndex = cmbSampleToEdit.SelectedIndex + 1;
             }
             catch { }
         }
@@ -160,6 +165,40 @@ namespace noiSNESs_Sound_Editor
 
                         File.WriteAllBytes(fileName, wav);
                     }
+                    return true;
+                }, stdFileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void btnExportAllSamples_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                int addressOfSampleZero = ((KeyValuePair<int, string>)cmbSampleToEdit.Items[0]).Key;
+                int lengthOfSampleZero = _brrsInRom[addressOfSampleZero];
+                uint samplerate = Convert.ToUInt32(nudSampleRate.Value);
+
+                string stdFileName = addressOfSampleZero.ToString("X6") + "_" + lengthOfSampleZero + "_" + samplerate;
+
+                bool fileOpened = Helper.fileDialogHelper(false, "BRR SNES file(*.BRR)|*.brr", "Choose the type and the output file",
+                (string firstFileName) =>
+                {
+                    string dir = Path.GetDirectoryName(firstFileName);
+
+                    foreach (var item in cmbSampleToEdit.Items)
+                    {
+                        int addressOfSample = ((KeyValuePair<int, string>)item).Key;
+                        int lengthOfSample = _brrsInRom[addressOfSample];
+                        byte[] brrToExport = _rom.Skip(addressOfSample).Take(lengthOfSample).ToArray();
+                        string fileName = addressOfSample.ToString("X6") + "_" + lengthOfSample + "_" + samplerate;
+
+                        File.WriteAllBytes(dir + Path.DirectorySeparatorChar + fileName + ".brr", brrToExport);
+                    }
+
                     return true;
                 }, stdFileName);
             }
